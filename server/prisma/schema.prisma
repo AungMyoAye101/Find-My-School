@@ -11,3 +11,169 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id       String @id @default(uuid())
+  name     String
+  email    String @unique
+  password String
+  role     Role   @default(USER)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // relations
+  schools      School[]
+  instructor   Instructor?
+  applications Application[]
+  reviews      Review[]
+  preferences  UserPreference[]
+}
+
+model School {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+  city        String
+  region      String
+  address     String
+
+  isVerified Boolean @default(false)
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  courses Course[]
+
+  createdAt DateTime @default(now())
+}
+
+model Instructor {
+  id              String  @id @default(uuid())
+  userId          String  @unique
+  bio             String?
+  experienceYears Int?
+
+  user    User     @relation(fields: [userId], references: [id])
+  courses Course[]
+}
+
+model Category {
+  id   String @id @default(uuid())
+  name String @unique
+
+  courses Course[]
+}
+
+model Course {
+  id          String  @id @default(uuid())
+  title       String
+  description String?
+  price       Float
+
+  level String
+
+  isPublished Boolean @default(false)
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id])
+
+  instructorId String
+  instructor   Instructor @relation(fields: [instructorId], references: [id])
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  classes Class[]
+  reviews Review[]
+  tags    CourseTag[]
+  images  CourseImage[]
+
+  createdAt DateTime @default(now())
+}
+
+model Class {
+  id       String @id @default(uuid())
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id])
+
+  startDate DateTime
+  endDate   DateTime
+  schedule  Json
+
+  maxStudents Int
+
+  applications Application[]
+}
+
+model Application {
+  id String @id @default(uuid())
+
+  userId  String
+  classId String
+
+  status String @default("PENDING")
+
+  user  User  @relation(fields: [userId], references: [id])
+  class Class @relation(fields: [classId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Review {
+  id String @id @default(uuid())
+
+  rating  Int
+  comment String?
+
+  userId   String
+  courseId String
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Preference {
+  id   String @id @default(uuid())
+  name String
+  type String
+
+  users UserPreference[]
+  tags  CourseTag[]
+}
+
+model UserPreference {
+  userId       String
+  preferenceId String
+
+  user       User       @relation(fields: [userId], references: [id])
+  preference Preference @relation(fields: [preferenceId], references: [id])
+
+  @@id([userId, preferenceId])
+}
+
+model CourseTag {
+  courseId     String
+  preferenceId String
+
+  course     Course     @relation(fields: [courseId], references: [id])
+  preference Preference @relation(fields: [preferenceId], references: [id])
+
+  @@id([courseId, preferenceId])
+}
+
+model CourseImage {
+  id       String @id @default(uuid())
+  url      String
+  publicId String
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id])
+}
